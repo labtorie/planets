@@ -1,10 +1,25 @@
 canvas {
     width: 100vw;
-    height: 100vh;
+    height: calc(100vh - 60px);
     background-color: #171821;
 }
 
 body, html {
     padding: 0 !important;
     margin: 0 !important;
+}
+
+.header {
+    height: 60px;
+    background-color: #191a24;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+}
+
+.header span {
+    color: white;
+    margin-left: 6px;
+    margin-right: 12px;
+    font-family: sans-serif;
 }

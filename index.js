@@ -1,13 +1,21 @@
 const canvas = document.querySelector('#canvas')
 const ctx = canvas.getContext('2d')
 canvas.width = window.innerWidth
-canvas.height = window.innerHeight
+canvas.height = window.innerHeight - 60
 
 const FRAMERATE = 90
 const TIMEOUT = 1000 / FRAMERATE
 const PLANET_SCALE = .5
 
 const G = 1
+
+document.querySelector('#trace').addEventListener('change', function () {
+    config.renderTrace = this.checked
+})
+document.querySelector('#forces').addEventListener('change', function () {
+    config.renderForces = this.checked
+})
+
 
 
 function force (p1, p2) {
@@ -17,33 +25,38 @@ function force (p1, p2) {
     return f_n.scale(f_v)
 }
 
+config = {
+    renderTrace: false,
+    renderForces: false,
+}
 
-/*const planets = [
+const planets = [
     {
-        color: 'green',
-        mass: 150,
+        color: 'blue',
+        mass: 1500,
         coords: new Vector2(canvas.width / 4, canvas.height / 2),
-        velocity: new Vector2(0, 1.2)
+        velocity: new Vector2(0, 1.6)
+    },
+    {
+        color: 'gray',
+        mass: 500,
+        coords: new Vector2(canvas.width / 2.4, canvas.height / 2),
+        velocity: new Vector2(0, 3)
     },
     {
         color: 'white',
         mass: 20,
-        coords: new Vector2(5 * canvas.width / 8 , canvas.height / 2),
-        velocity: new Vector2(0, -1.5)
+        coords: new Vector2(canvas.width / 4 + 40 , canvas.height / 2),
+        velocity: new Vector2(0, 2.3)
     },
     {
         color: 'red',
-        mass: 33200,
+        mass: 100000,
         coords: new Vector2(canvas.width / 2, canvas.height / 2),
-        velocity: new Vector2(0, -.04)
+        velocity: new Vector2(0, -.03)
     },
-    {
-        color: "white",
-        mass: 6000,
-        coords: new Vector2(7 * canvas.width / 8, canvas.height / 2),
-        velocity: new Vector2(0, .5)
-    }
-]*/
+
+]
 /*const planets = [
     {
         color: 'blue',
@@ -84,16 +97,16 @@ function generatePlanets (amount) {
 }
 
 function start () {
-    const world = new World(generatePlanets(4))
+    const world = new World(planets)
     window.world = world
     const timer = setInterval(()=>{
         world.update()
     }, TIMEOUT)
 
-    setTimeout(()=>{
-        clearInterval(timer)
-        start()
-    }, 5000)
+    // setTimeout(()=>{
+    //     clearInterval(timer)
+    //     start()
+    // }, 5000)
 }
 
 
@@ -129,7 +142,7 @@ class Planet {
                 return
 
             const f = force(this, planet)
-            this.drawForce(f)
+            config.renderForces && this.drawForce(f)
             const a_v = f.magnitude() / (this.mass * FRAMERATE)
             let a = f.normalize().scale(a_v)
             a_sum = a_sum.add(a)
@@ -174,9 +187,12 @@ class World {
     }
 
     update() {
-        //ctx.clearRect(0,0, canvas.width, canvas.height)
-        ctx.fillStyle = "rgba(23,24,33,0.02)";
-        ctx.fillRect(0,0, canvas.width, canvas.height)
+        if (config.renderTrace) {
+            ctx.fillStyle = "rgba(23,24,33,0.2)";
+            ctx.fillRect(0,0, canvas.width, canvas.height)
+        } else {
+            ctx.clearRect(0,0, canvas.width, canvas.height)
+        }
         this.planets.forEach(planet=>{
             planet.update(this.planets)
             planet.render()
