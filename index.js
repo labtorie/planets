@@ -21,10 +21,24 @@ document.querySelector('#forces').addEventListener('change', function () {
     ctx.clearRect(0,0, canvas.width, canvas.height)
     config.followCam = this.checked
 })*/
+window.addEventListener('scroll', (e)=>{
+    e.preventDefault()
+})
+window.addEventListener('wheel', function (e){
+    const delta = e.deltaY / 500
+    config.scale = Math.max(.01, config.scale - delta)
+})
 
-document.querySelector('#scale').addEventListener('change', function () {
-    ctx.clearRect(0,0, canvas.width, canvas.height)
-    config.scale = this.value
+const pan = {
+    x: 0,
+    y: 0,
+}
+addEventListener('mousemove', e=>{
+    if (!e.buttons) return
+
+    pan.x += e.movementX
+    pan.y += e.movementY
+
 })
 
 
@@ -196,8 +210,8 @@ class Planet {
         }
         drawCircle(
             ctx,
-            config.scale * this.coords.x + canvas.width / 2,
-            config.scale * this.coords.y + canvas.height / 2,
+            pan.x + config.scale * this.coords.x + canvas.width / 2,
+            pan.y + config.scale * this.coords.y + canvas.height / 2,
             (config.scale / 2) * this.radius,
             this.color
         )
@@ -232,7 +246,6 @@ class World {
             x: center.x - largestPlanet.coords.x,
             y: center.y - largestPlanet.coords.y
         }
-        console.log(translate, largestPlanet)
         config.followCam && ctx.translate(translate.x, translate.y)
 
 
