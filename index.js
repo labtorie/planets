@@ -69,6 +69,7 @@ const pan = {
 addEventListener('mousemove', e => {
     if (!e.buttons) return
 
+    world.toggleCamMode(true)
     config.renderTrace = false
     pan.x += e.movementX
     pan.y += e.movementY
@@ -86,7 +87,6 @@ function touchStart(event) {
 }
 
 addEventListener('touchmove', e => {
-    console.log(e)
     pan.x -= .03 * (start.x - e.touches[0].pageX);
     pan.y -= .03 * (start.y - e.touches[0].pageY);
 })
@@ -113,24 +113,28 @@ console.log(generateStars())
 const planets = [
     {
         color: 'blue',
+        name: 'Earth',
         mass: 1500,
         coords: new Vector2(-400, 0),
         velocity: new Vector2(0, 1.6)
     },
     {
         color: 'gray',
+        name: 'Mercury',
         mass: 500,
         coords: new Vector2(120, 0),
         velocity: new Vector2(0, -3)
     },
     {
         color: 'white',
+        name: 'Moon',
         mass: 20,
         coords: new Vector2(-360, 0),
         velocity: new Vector2(0, 2.3)
     },
     {
         color: '#ffd6d6',
+        name: 'Sun',
         glow: true,
         mass: 100000,
         coords: new Vector2(0, 0),
@@ -138,10 +142,18 @@ const planets = [
     },
     {
         color: 'orange',
+        name: 'Jupiter',
         mass: 3000,
         coords: new Vector2(-800, 0),
         velocity: new Vector2(0, 1.2)
-    }
+    },
+    {
+        color: 'white',
+        name: 'Jupiter sat idk',
+        mass: 20,
+        coords: new Vector2(-840, 0),
+        velocity: new Vector2(0, 2)
+    },
 
 ]
 
@@ -186,8 +198,9 @@ function drawCircle(ctx, x, y, radius, fill) {
 
 
 class Planet {
-    constructor({color, mass, coords, velocity, glow}) {
+    constructor({color, mass, coords, velocity, glow, name}) {
         this.glow = !!glow
+        this.name = name
         this.id = Math.floor(Math.random() * 10000).toString()
         this.color = color
         this.mass = mass
@@ -269,7 +282,8 @@ class World {
                 mass: p.mass,
                 coords: p.coords,
                 velocity: p.velocity,
-                glow: p.glow
+                glow: p.glow,
+                name: p.name,
             })
         })
     }
@@ -285,16 +299,22 @@ class World {
         })
     }
 
-    toggleCamMode() {
+    toggleCamMode(release=false) {
+        if (release) {
+            this.camMode = -1
+            document.querySelector('#cam_mode').textContent = 'Free cam'
+            return
+        }
+
         if (this.camMode + 1 === this.planets.length) {
-            document.querySelector('#cam_mode').textContent = 'free'
+            document.querySelector('#cam_mode').textContent = 'Free cam'
             this.camMode = -1
             pan.x = 0
             pan.y = 0
             config.scale = 1
         }
         else {
-            document.querySelector('#cam_mode').textContent = 'Planet '+ Number(this.camMode + 1)
+            document.querySelector('#cam_mode').textContent = 'Observing: '+ this.planets[this.camMode+1].name
             this.camMode++
         }
     }
