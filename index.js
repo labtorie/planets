@@ -143,7 +143,7 @@ const planets = [
     {
         color: 'orange',
         name: 'Jupiter',
-        mass: 3000,
+        mass: 5000,
         coords: new Vector2(-800, 0),
         velocity: new Vector2(0, 1.2)
     },
@@ -151,8 +151,16 @@ const planets = [
         color: 'white',
         name: 'Jupiter sat idk',
         mass: 20,
-        coords: new Vector2(-840, 0),
-        velocity: new Vector2(0, 2)
+        coords: new Vector2(-860, 0),
+        velocity: new Vector2(0, 2.2)
+    },
+    {
+        color: 'white',
+        name: 'Oh no, a comet',
+        mass: 10,
+        glow: true,
+        coords: new Vector2(-1000, -300),
+        velocity: new Vector2(2, -1)
     },
 
 ]
@@ -293,7 +301,13 @@ class World {
             stars.forEach(star => {
                 const {x, y} = toCanvas(star.x, star.y, depth + 1)
 
-                ctx.fillStyle = '#ffffff'
+                ctx.fillStyle = [
+                    '#fff3f3',
+                    '#b4ccff',
+                    '#f69a9a',
+                    '#a9a9a9',
+                    '#939393',
+                ][depth] || '#ffffff'
                 ctx.fillRect(x, y, 1, 1)
             })
         })
