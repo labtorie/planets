@@ -3,17 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <title>Sandbox</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=2">
     <script src="vector.js"></script>
 </head>
 <body>
 <div class="header">
-    <input id="trace" type="checkbox">
-    <span>Render trace</span>
-    <input id="forces" type="checkbox">
-    <span>Render forces</span>
+    <section>
+        <input id="trace" type="checkbox">
+        <span>Render trace</span>
+    </section>
+    <section>
+        <input id="forces" type="checkbox">
+        <span>Render forces</span>
+    </section>
+    <section>
+        <input id="scale" type="number" step=".05" value="1">
+        <span>Scale</span>
+    </section>
 </div>
-<canvas id="canvas" width="300" height="300"/>
-<script src="index.js"></script>
+<canvas id="canvas"/>
+
+<script src="index.js?v=2"></script>
 </body>
 </html>

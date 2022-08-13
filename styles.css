@@ -1,6 +1,6 @@
 canvas {
     width: 100vw;
-    height: calc(100vh - 60px);
+    height: 100vh;
     background-color: #171821;
 }
 
@@ -15,11 +15,24 @@ body, html {
     display: flex;
     align-items: center;
     padding: 0 20px;
+    position: fixed;
+    right: 0;
+    left: 0;
+    top: 0;
+    z-index: 10;
+}
+
+input[type="number"] {
+    background-color: #191a24;
+    color: white;
+    width: 44px;
+}
+section {
+    margin: 0 12px;
 }
 
 .header span {
     color: white;
     margin-left: 6px;
-    margin-right: 12px;
     font-family: sans-serif;
 }
