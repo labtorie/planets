@@ -37,3 +37,12 @@ section {
     margin-left: 6px;
     font-family: sans-serif;
 }
+
+button {
+    background-color: #33364d;
+    color: white;
+    outline: none;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    padding: 4px;
+}

@@ -3,11 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <title>Sandbox</title>
-    <link rel="stylesheet" href="styles.css?v=3">
+    <link rel="stylesheet" href="styles.css?v=4">
     <script src="vector.js"></script>
 </head>
 <body>
 <div class="header">
+    <section>
+        <input id="play" checked="true" type="checkbox">
+        <span>Play</span>
+    </section>
     <section>
         <input id="trace" type="checkbox">
         <span>Render trace</span>
@@ -17,11 +21,21 @@
         <span>Render forces</span>
     </section>
     <section>
+        <input id="stars" checked="true" type="checkbox">
+        <span>Render stars</span>
+    </section>
+    <section>
+        <button id="cam">
+            Toggle cam
+        </button>
+        <span id="cam_mode">free</span>
+    </section>
+    <section>
         <span>Wheel for scale</span>
     </section>
 </div>
 <canvas id="canvas"/>
 
-<script src="index.js?v=3"></script>
+<script src="index.js?v=4"></script>
 </body>
 </html>
