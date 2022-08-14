@@ -8,6 +8,28 @@ const TIMEOUT = 1000 / FRAMERATE
 
 const G = 1
 
+const pressedKeys = {
+    up: false,
+    left: false,
+    right: false,
+    shoot: false,
+}
+
+addEventListener('keydown', e=>{
+    if (e.key === 'w') pressedKeys.up = true
+    if (e.key === 'a') pressedKeys.left = true
+    if (e.key === 'd') pressedKeys.right = true
+    if (e.key === ' ') pressedKeys.shoot = true
+
+})
+
+addEventListener('keyup', e=>{
+    if (e.key === 'w') pressedKeys.up = false
+    if (e.key === 'a') pressedKeys.left = false
+    if (e.key === 'd') pressedKeys.right = false
+    if (e.key === ' ') pressedKeys.shoot = false
+})
+
 config = {
     play: true,
     renderStars: true,
@@ -108,7 +130,6 @@ function generateStars(layers = 4, amount = 500) {
     ))
 }
 
-console.log(generateStars())
 
 const planets = [
     {
@@ -173,7 +194,7 @@ function randomTo(to, floor = true) {
 
 
 function start() {
-    const world = new World(planets, generateStars())
+    const world = new World(planets, generateStars(), new Player({coords: new Vector2(800, 300)}))
     document.querySelector('#cam').addEventListener('click', ()=>{
         world.toggleCamMode()
     })
@@ -204,6 +225,76 @@ function drawCircle(ctx, x, y, radius, fill) {
     }
 }
 
+class Player {
+    constructor({coords}) {
+        this.coords = coords
+        this.mass = 1
+        this.velocity = new Vector2(0,0)
+        this.name = 'Player'
+        this.id = 'Player'
+        this.dir = new Vector2(0, -1).normalize()
+    }
+
+    update(otherPlanets) {
+        const ROT_SPEED = .04
+        if (pressedKeys.left) {
+            this.dir = this.dir.rotate(-ROT_SPEED)
+        }
+        if (pressedKeys.right) {
+            this.dir = this.dir.rotate(ROT_SPEED)
+        }
+
+        let a_sum = new Vector2(0, 0)
+        otherPlanets.forEach((planet) => {
+            if (planet.id === this.id)
+                return
+
+            const f = force(this, planet)
+            const a_v = f.magnitude() / (this.mass * FRAMERATE)
+            let a = f.normalize().scale(a_v)
+            a_sum = a_sum.add(a)
+        })
+        if (pressedKeys.up) {
+            a_sum = a_sum.add(this.dir.scale(.01))
+        }
+
+        this.velocity = this.velocity.add(a_sum)
+        //this.velocity = this.velocity.add(force(this))
+        this.coords = this.coords.add(this.velocity)
+    }
+    render(follow) {
+        if (follow) {
+            pan.x = -this.coords.x
+            pan.y = -this.coords.y
+            config.scale = 1
+        }
+        const {x, y} = toCanvas(this.coords.x, this.coords.y)
+
+        ctx.shadowBlur = pressedKeys.up ? 20 : 0
+        ctx.shadowColor = 'orange'
+
+
+
+        ctx.beginPath();       // Start a new path
+        ctx.strokeStyle = 'silver'
+        const from = toCanvas(this.coords.x, this.coords.y)
+        ctx.moveTo(from.x, from.y);
+        const dir = this.coords.add(this.dir.scale(13))// Move the pen to (30, 50)
+        const to = toCanvas(dir.x, dir.y)
+        ctx.lineWidth = 3
+        ctx.lineTo(to.x, to.y);  // Draw a line to (150, 100)
+        ctx.stroke();
+
+        drawCircle(
+            ctx,
+            x, y,
+            pressedKeys.up ? 4 : 2,
+            pressedKeys.up ? 'white' : 'silver'
+        )
+
+    }
+
+}
 
 class Planet {
     constructor({color, mass, coords, velocity, glow, name}) {
@@ -235,13 +326,6 @@ class Planet {
         this.coords = this.coords.add(this.velocity)
     }
 
-    drawVelocity() {
-        ctx.beginPath();       // Start a new path
-        ctx.moveTo(this.coords.x, this.coords.y);
-        const dir = this.coords.add(this.velocity.scale(10))// Move the pen to (30, 50)
-        ctx.lineTo(dir.x, dir.y);  // Draw a line to (150, 100)
-        ctx.stroke();
-    }
 
     drawForce(f, color) {
         // const f = force(this)
@@ -269,7 +353,6 @@ class Planet {
         }
         const {x, y} = toCanvas(this.coords.x, this.coords.y)
 
-        ctx.fillRect(x, y, 1, 1)
         drawCircle(
             ctx,
             x, y,
@@ -281,9 +364,9 @@ class Planet {
 }
 
 class World {
-    constructor(planets = [], stars = []) {
+    constructor(planets = [], stars = [], player) {
         this.stars = stars
-        this.camMode = -1
+        this.camMode = -2
         this.planets = planets.map(p => {
             return new Planet({
                 color: p.color,
@@ -294,6 +377,18 @@ class World {
                 name: p.name,
             })
         })
+        this.player = player
+    }
+
+    shoot () {
+        this.planets.push(new Planet({
+            color: 'white',
+            glow: true,
+            mass: 2,
+            velocity: this.player.dir.scale(3).add(this.player.velocity),
+            coords: this.player.coords.add(this.player.dir),
+            name: 'bullet'
+        }))
     }
 
     renderStars() {
@@ -314,18 +409,16 @@ class World {
     }
 
     toggleCamMode(release=false) {
-        if (release) {
+
+        if (release || this.camMode === -2) {
             this.camMode = -1
             document.querySelector('#cam_mode').textContent = 'Free cam'
             return
         }
 
         if (this.camMode + 1 === this.planets.length) {
-            document.querySelector('#cam_mode').textContent = 'Free cam'
-            this.camMode = -1
-            pan.x = 0
-            pan.y = 0
-            config.scale = 1
+            document.querySelector('#cam_mode').textContent = 'Player cam'
+            this.camMode = -2
         }
         else {
             document.querySelector('#cam_mode').textContent = 'Observing: '+ this.planets[this.camMode+1].name
@@ -337,6 +430,8 @@ class World {
         ctx.save()
 
         const largestPlanet = this.planets.find(p => p.color === 'blue')
+
+
 
         const center = {
             x: canvas.width / 2,
@@ -356,10 +451,19 @@ class World {
             ctx.clearRect(0, 0, canvas.width, canvas.height)
         }
         config.renderStars && this.renderStars()
+
+        config.play && this.player.update(this.planets)
+        this.player.render(this.camMode === -2)
+        if (pressedKeys.shoot) {
+            this.shoot()
+            pressedKeys.shoot = false
+        }
+
         this.planets.forEach((planet, index) => {
             config.play && planet.update(this.planets)
             planet.render(this.camMode === index)
         })
+
 
         ctx.restore()
 
