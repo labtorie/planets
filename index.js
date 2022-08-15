@@ -8,27 +8,6 @@ const TIMEOUT = 1000 / FRAMERATE
 
 const G = 1
 
-const pressedKeys = {
-    up: false,
-    left: false,
-    right: false,
-    shoot: false,
-}
-
-addEventListener('keydown', e => {
-    if (e.key === 'w') pressedKeys.up = true
-    if (e.key === 'a') pressedKeys.left = true
-    if (e.key === 'd') pressedKeys.right = true
-    if (e.key === ' ') pressedKeys.shoot = true
-
-})
-
-addEventListener('keyup', e => {
-    if (e.key === 'w') pressedKeys.up = false
-    if (e.key === 'a') pressedKeys.left = false
-    if (e.key === 'd') pressedKeys.right = false
-    if (e.key === ' ') pressedKeys.shoot = false
-})
 
 config = {
     play: true,
@@ -38,19 +17,43 @@ config = {
     followCam: false,
     scale: 1
 }
-document.querySelector('#play').addEventListener('change', function () {
-    config.play = this.checked
+
+let hammer = new Hammer(canvas, {})
+hammer.get('pan').set({direction: Hammer.DIRECTION_ALL})
+
+hammer.on('pan panend', (e)=>{
+    pan.x += e.velocityX*15
+    pan.y += e.velocityY*15
+
+    if (e.type === 'pan') {
+        world.toggleCamMode(true)
+        config.renderTrace = false
+    }
+
+    if (e.type === 'panend') {
+        pan.velX = e.velocityX * 10
+        pan.velY = e.velocityY * 10
+    }
 })
+hammer.get('pinch').set({enable: true})
+
+
+let lastScale = 1
+hammer.on('pinch pinchend', (e)=>{
+    e.preventDefault()
+
+
+    zoom(lastScale * e.scale, true)
+    if (e.type === 'pinchend')
+        lastScale = config.scale
+})
+
+
 document.querySelector('#reload').addEventListener('click', function () {
     location.reload()
 })
-document.querySelector('#stars').addEventListener('change', function () {
-    config.renderStars = this.checked
-})
 
-document.querySelector('#trace').addEventListener('change', function () {
-    config.renderTrace = this.checked
-})
+
 
 document.querySelector('#forces').addEventListener('change', function () {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -64,12 +67,11 @@ window.addEventListener('scroll', (e) => {
 const timer = {
     n: 0
 }
-window.addEventListener('wheel', function (e) {
-    clearTimeout(timer.n)
-    config.renderTrace = false
-    const delta = e.deltaY / 500
+function zoom (delta, touch=false) {
     let prevScale = config.scale
-    config.scale = Math.max(.03, config.scale - delta)
+    config.scale = !touch ?
+        Math.max(.03, config.scale - (delta * config.scale)) :
+        Math.max(.03, delta)
     let currentPan = new Vector2(pan.x, pan.y)
     const panScale = config.scale / prevScale
     let newPan = currentPan.scale(panScale)
@@ -78,6 +80,12 @@ window.addEventListener('wheel', function (e) {
     timer.n = setTimeout(() => {
         config.renderTrace = document.querySelector('#trace').checked
     }, 200)
+}
+window.addEventListener('wheel', function (e) {
+    clearTimeout(timer.n)
+    config.renderTrace = false
+    const delta = e.deltaY / 700
+    zoom(delta)
 })
 
 
@@ -98,31 +106,14 @@ function toCanvas(x, y, depth = 0) {
 const pan = {
     x: 0,
     y: 0,
+    velX: 0,
+    velY: 0,
 }
-addEventListener('mousemove', e => {
-    if (!e.buttons) return
-
-    world.toggleCamMode(true)
-    config.renderTrace = false
-    pan.x += e.movementX
-    pan.y += e.movementY
-})
 
 addEventListener('mouseup', () => {
-    config.renderTrace = document.querySelector('#trace').checked
+  //  config.renderTrace = document.querySelector('#trace').checked
 })
 
-addEventListener("touchstart", touchStart, false)
-
-function touchStart(event) {
-    start.x = event.touches[0].pageX;
-    start.y = event.touches[0].pageY;
-}
-
-addEventListener('touchmove', e => {
-    pan.x -= .03 * (start.x - e.touches[0].pageX);
-    pan.y -= .03 * (start.y - e.touches[0].pageY);
-})
 
 
 function force(p1, p2) {
@@ -348,7 +339,7 @@ class World {
         this.stars.forEach((stars, depth) => {
             stars.forEach(star => {
                 const {x, y} = toCanvas(star.x, star.y, depth + 1)
-
+                ctx.shadowBlur = 0
                 ctx.fillStyle = [
                     '#f69a9a',
                     '#ffe9da',
@@ -373,9 +364,19 @@ class World {
     }
 
     update() {
+        if (Math.abs(pan.velX) < 0.01)
+            pan.velX = 0
+        if (Math.abs(pan.velY) < 0.01)
+            pan.velY = 0
+
+        pan.x += pan.velX
+        pan.velX *= .96
+        pan.y += pan.velY
+        pan.velY *= .96
+
 
         if (config.renderTrace) {
-            ctx.fillStyle = "rgba(23,24,33,0.1)";
+            ctx.fillStyle = "#17182112";
             ctx.fillRect(0, 0, canvas.width, canvas.height)
         } else {
             ctx.clearRect(0, 0, canvas.width, canvas.height)
