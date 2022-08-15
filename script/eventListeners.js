@@ -67,3 +67,8 @@ window.addEventListener('wheel', function (e) {
     const delta = e.deltaY / 700
     zoom(delta)
 })
+
+window.addEventListener('resize',()=>{
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+})
