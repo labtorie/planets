@@ -2,10 +2,10 @@
 Pure JS implementation of some kind of gravity simulation based on a formula I've learnt from school. 
 
 Features:
-1) Visualization of forces affecting on each planet
+1) ~~Visualization of forces affecting on each planet~~
 2) Zoom and pan
 3) Different camera modes (free cam + planet tracking)
-4) Poorly implemented trace rendering
+4) ~~Poorly implemented trace rendering~~
 5) Stars with parallax effect (proud of it)
 
 That's the thing, basically. Demo is [here](https://labtorie.github.io/planets/)
