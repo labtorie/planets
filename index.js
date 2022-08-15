@@ -194,7 +194,8 @@ function randomTo(to, floor = true) {
 
 
 function start() {
-    const world = new World(planets, generateStars(), new Player({coords: new Vector2(800, 300)}))
+    const world = new World(planets, generateStars())
+   // const world = new World(planets, generateStars(), new Player({coords: new Vector2(800, 300)}))
     document.querySelector('#cam').addEventListener('click', ()=>{
         world.toggleCamMode()
     })
@@ -364,9 +365,9 @@ class Planet {
 }
 
 class World {
-    constructor(planets = [], stars = [], player) {
+    constructor(planets = [], stars = [], player=null) {
         this.stars = stars
-        this.camMode = -2
+        this.camMode = -1
         this.planets = planets.map(p => {
             return new Planet({
                 color: p.color,
@@ -452,11 +453,13 @@ class World {
         }
         config.renderStars && this.renderStars()
 
-        config.play && this.player.update(this.planets)
-        this.player.render(this.camMode === -2)
-        if (pressedKeys.shoot) {
-            this.shoot()
-            pressedKeys.shoot = false
+        if (this.player) {
+            config.play && this.player.update(this.planets)
+            this.player.render(this.camMode === -2)
+            if (pressedKeys.shoot) {
+                this.shoot()
+                pressedKeys.shoot = false
+            }
         }
 
         this.planets.forEach((planet, index) => {
