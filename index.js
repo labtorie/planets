@@ -15,7 +15,7 @@ const pressedKeys = {
     shoot: false,
 }
 
-addEventListener('keydown', e=>{
+addEventListener('keydown', e => {
     if (e.key === 'w') pressedKeys.up = true
     if (e.key === 'a') pressedKeys.left = true
     if (e.key === 'd') pressedKeys.right = true
@@ -23,7 +23,7 @@ addEventListener('keydown', e=>{
 
 })
 
-addEventListener('keyup', e=>{
+addEventListener('keyup', e => {
     if (e.key === 'w') pressedKeys.up = false
     if (e.key === 'a') pressedKeys.left = false
     if (e.key === 'd') pressedKeys.right = false
@@ -36,10 +36,13 @@ config = {
     renderTrace: false,
     renderForces: false,
     followCam: false,
-    scale: .5
+    scale: 1
 }
 document.querySelector('#play').addEventListener('change', function () {
     config.play = this.checked
+})
+document.querySelector('#reload').addEventListener('click', function () {
+    location.reload()
 })
 document.querySelector('#stars').addEventListener('change', function () {
     config.renderStars = this.checked
@@ -65,22 +68,30 @@ window.addEventListener('wheel', function (e) {
     clearTimeout(timer.n)
     config.renderTrace = false
     const delta = e.deltaY / 500
-    config.scale = Math.max(.01, config.scale - delta)
-    timer.n = setTimeout(()=>{
+    let prevScale = config.scale
+    config.scale = Math.max(.03, config.scale - delta)
+    let currentPan = new Vector2(pan.x, pan.y)
+    const panScale = config.scale / prevScale
+    let newPan = currentPan.scale(panScale)
+    pan.x = newPan.x
+    pan.y = newPan.y
+    timer.n = setTimeout(() => {
         config.renderTrace = document.querySelector('#trace').checked
     }, 200)
 })
 
 
 function toCanvas(x, y, depth = 0) {
-    const k = 1
-    const scale = depth === 0 ?
-        config.scale :
-        1 + config.scale / (depth * 10)
+    const depthDelta = 3
+    const scale = config.scale
+
+    const kPan = 1 / (1 + depthDelta * depth * scale)
+    const kScale = depth === 0 ? 1 :
+        1 / (1 + depth * depthDelta * scale)
 
     return {
-        x: (pan.x / (1 + depth)) + scale * x + canvas.width / 2,
-        y: (pan.y / (1 + depth)) + scale * y + canvas.height / 2
+        x: (pan.x * kPan) + kScale * scale * x + canvas.width / 2,
+        y: (pan.y * kPan) + kScale * scale * y + canvas.height / 2
     }
 }
 
@@ -97,7 +108,7 @@ addEventListener('mousemove', e => {
     pan.y += e.movementY
 })
 
-addEventListener('mouseup', ()=>{
+addEventListener('mouseup', () => {
     config.renderTrace = document.querySelector('#trace').checked
 })
 
@@ -121,11 +132,13 @@ function force(p1, p2) {
     return f_n.scale(f_v)
 }
 
-function generateStars(layers = 4, amount = 500) {
-    return Array(layers).fill(0).map(layer => (
+function generateStars(layers = 4, amount = 1000) {
+    const SIZE = layers * canvas.width / 0.3
+    const OFFSET = SIZE / 2
+    return Array(layers).fill(0).map((layer, layerIndex) => (
         Array(amount / layers).fill(0).map(star => ({
-            x: 1000 - (Math.random() * 2000),
-            y: 1000 - (Math.random() * 2000),
+            x: (1 + layerIndex / 2) * OFFSET - (Math.random() * (1 + layerIndex / 2) * SIZE),
+            y: (1 + layerIndex / 2) * OFFSET - (Math.random() * (1 + layerIndex / 2) * SIZE),
         }))
     ))
 }
@@ -133,7 +146,7 @@ function generateStars(layers = 4, amount = 500) {
 
 const planets = [
     {
-        color: 'blue',
+        color: '#69ffca',
         name: 'Earth',
         mass: 1500,
         coords: new Vector2(-400, 0),
@@ -186,17 +199,11 @@ const planets = [
 
 ]
 
-function randomTo(to, floor = true) {
-    if (!floor)
-        return (Math.random() * to)
-    return Math.floor(Math.random() * to)
-}
-
 
 function start() {
     const world = new World(planets, generateStars())
-   // const world = new World(planets, generateStars(), new Player({coords: new Vector2(800, 300)}))
-    document.querySelector('#cam').addEventListener('click', ()=>{
+    // const world = new World(planets, generateStars(), new Player({coords: new Vector2(800, 300)}))
+    document.querySelector('#cam').addEventListener('click', () => {
         world.toggleCamMode()
     })
     window.world = world
@@ -224,77 +231,6 @@ function drawCircle(ctx, x, y, radius, fill) {
         ctx.strokeStyle = stroke
         ctx.stroke()
     }
-}
-
-class Player {
-    constructor({coords}) {
-        this.coords = coords
-        this.mass = 1
-        this.velocity = new Vector2(0,0)
-        this.name = 'Player'
-        this.id = 'Player'
-        this.dir = new Vector2(0, -1).normalize()
-    }
-
-    update(otherPlanets) {
-        const ROT_SPEED = .04
-        if (pressedKeys.left) {
-            this.dir = this.dir.rotate(-ROT_SPEED)
-        }
-        if (pressedKeys.right) {
-            this.dir = this.dir.rotate(ROT_SPEED)
-        }
-
-        let a_sum = new Vector2(0, 0)
-        otherPlanets.forEach((planet) => {
-            if (planet.id === this.id)
-                return
-
-            const f = force(this, planet)
-            const a_v = f.magnitude() / (this.mass * FRAMERATE)
-            let a = f.normalize().scale(a_v)
-            a_sum = a_sum.add(a)
-        })
-        if (pressedKeys.up) {
-            a_sum = a_sum.add(this.dir.scale(.01))
-        }
-
-        this.velocity = this.velocity.add(a_sum)
-        //this.velocity = this.velocity.add(force(this))
-        this.coords = this.coords.add(this.velocity)
-    }
-    render(follow) {
-        if (follow) {
-            pan.x = -this.coords.x
-            pan.y = -this.coords.y
-            config.scale = 1
-        }
-        const {x, y} = toCanvas(this.coords.x, this.coords.y)
-
-        ctx.shadowBlur = pressedKeys.up ? 20 : 0
-        ctx.shadowColor = 'orange'
-
-
-
-        ctx.beginPath();       // Start a new path
-        ctx.strokeStyle = 'silver'
-        const from = toCanvas(this.coords.x, this.coords.y)
-        ctx.moveTo(from.x, from.y);
-        const dir = this.coords.add(this.dir.scale(13))// Move the pen to (30, 50)
-        const to = toCanvas(dir.x, dir.y)
-        ctx.lineWidth = 3
-        ctx.lineTo(to.x, to.y);  // Draw a line to (150, 100)
-        ctx.stroke();
-
-        drawCircle(
-            ctx,
-            x, y,
-            pressedKeys.up ? 4 : 2,
-            pressedKeys.up ? 'white' : 'silver'
-        )
-
-    }
-
 }
 
 class Planet {
@@ -357,7 +293,7 @@ class Planet {
         drawCircle(
             ctx,
             x, y,
-            (config.scale / 2) * this.radius,
+            (config.scale) * this.radius,
             this.color
         )
 
@@ -365,7 +301,7 @@ class Planet {
 }
 
 class World {
-    constructor(planets = [], stars = [], player=null) {
+    constructor(planets = [], stars = [], player = null) {
         this.stars = stars
         this.camMode = -1
         this.planets = planets.map(p => {
@@ -381,15 +317,31 @@ class World {
         this.player = player
     }
 
-    shoot () {
-        this.planets.push(new Planet({
-            color: 'white',
-            glow: true,
-            mass: 2,
-            velocity: this.player.dir.scale(3).add(this.player.velocity),
-            coords: this.player.coords.add(this.player.dir),
-            name: 'bullet'
-        }))
+
+    renderGrid() {
+        const LINES = 10
+        const STEP = 300
+        const OFFSET = LINES * STEP
+
+        ctx.strokeStyle = '#ffffff11'
+        ctx.strokeWidth = 1
+        ctx.shadowBlur = 0
+
+        for (let x = -LINES; x <= LINES; x++) {
+            const from = toCanvas(x * STEP, -OFFSET)
+            const to = toCanvas(x * STEP, OFFSET)
+            ctx.moveTo(from.x, from.y)
+            ctx.lineTo(to.x, to.y)
+            ctx.stroke()
+        }
+        for (let y = -LINES; y <= LINES; y++) {
+            const from = toCanvas(-OFFSET, y * STEP)
+            const to = toCanvas(OFFSET, y * STEP)
+            ctx.moveTo(from.x, from.y)
+            ctx.lineTo(to.x, to.y)
+            ctx.stroke()
+        }
+
     }
 
     renderStars() {
@@ -398,52 +350,29 @@ class World {
                 const {x, y} = toCanvas(star.x, star.y, depth + 1)
 
                 ctx.fillStyle = [
-                    '#fff3f3',
-                    '#b4ccff',
                     '#f69a9a',
-                    '#a9a9a9',
-                    '#939393',
+                    '#ffe9da',
+                    '#ffdafa',
+                    '#888aff',
                 ][depth] || '#ffffff'
                 ctx.fillRect(x, y, 1, 1)
             })
         })
     }
 
-    toggleCamMode(release=false) {
+    toggleCamMode(release = false) {
 
         if (release || this.camMode === -2) {
             this.camMode = -1
             document.querySelector('#cam_mode').textContent = 'Free cam'
             return
-        }
-
-        if (this.camMode + 1 === this.planets.length) {
-            document.querySelector('#cam_mode').textContent = 'Player cam'
-            this.camMode = -2
-        }
-        else {
-            document.querySelector('#cam_mode').textContent = 'Observing: '+ this.planets[this.camMode+1].name
+        } else {
+            document.querySelector('#cam_mode').textContent = 'Observing: ' + this.planets[this.camMode + 1].name
             this.camMode++
         }
     }
 
     update() {
-        ctx.save()
-
-        const largestPlanet = this.planets.find(p => p.color === 'blue')
-
-
-
-        const center = {
-            x: canvas.width / 2,
-            y: canvas.height / 2
-        }
-        const translate = {
-            x: center.x - largestPlanet.coords.x,
-            y: center.y - largestPlanet.coords.y
-        }
-        config.followCam && ctx.translate(translate.x, translate.y)
-
 
         if (config.renderTrace) {
             ctx.fillStyle = "rgba(23,24,33,0.1)";
@@ -453,22 +382,11 @@ class World {
         }
         config.renderStars && this.renderStars()
 
-        if (this.player) {
-            config.play && this.player.update(this.planets)
-            this.player.render(this.camMode === -2)
-            if (pressedKeys.shoot) {
-                this.shoot()
-                pressedKeys.shoot = false
-            }
-        }
-
         this.planets.forEach((planet, index) => {
             config.play && planet.update(this.planets)
             planet.render(this.camMode === index)
         })
-
-
-        ctx.restore()
+        //this.renderGrid()
 
     }
 }
