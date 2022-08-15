@@ -2,37 +2,38 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="HandheldFriendly" content="true" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <meta name="HandheldFriendly" content="true"/>
     <title>Sandbox</title>
     <link rel="stylesheet" href="styles.css?v=6">
     <script src="vector.js"></script>
+    <script src="script/planets.js"></script>
     <script src="hammer.js"></script>
 </head>
 <body>
 <div class="header">
-   <!-- <section>
-        <input id="play" checked="true" type="checkbox">
-        <span>Play</span>
-    </section>
-    <section>
-        <input id="trace" type="checkbox">
-        <span>Render trace (cringe)</span>
-    </section>
+    <!-- <section>
+         <input id="play" checked="true" type="checkbox">
+         <span>Play</span>
+     </section>
+     <section>
+         <input id="trace" type="checkbox">
+         <span>Render trace (cringe)</span>
+     </section>
 
-    <section>
-        <input id="stars" checked="true" type="checkbox">
-        <span>Render stars</span>
-    </section>
-    <section>-->
+     <section>
+         <input id="stars" checked="true" type="checkbox">
+         <span>Render stars</span>
+     </section>
+     <section>-->
     <section style="display: none">
         <input id="forces" type="checkbox">
         <span>Render forces</span>
     </section>
-        <button id="cam">
-            Toggle cam
-        </button>
-        <span id="cam_mode">Free cam</span>
+    <button id="cam">
+        Toggle cam
+    </button>
+    <span id="cam_mode">Free cam</span>
     </section>
     <section>
         <button id="reload">
@@ -42,6 +43,10 @@
 </div>
 <canvas id="canvas"/>
 
-<script src="index.js?v=11"></script>
+<script src="script/utils.js"></script>
+<script src="script/World.js"></script>
+<script src="script/Planet.js"></script>
+<script src="index.js?v=12"></script>
+<script src="script/eventListeners.js"></script>
 </body>
 </html>
