@@ -1,5 +1,6 @@
 const canvas = document.querySelector('#canvas')
-const ctx = canvas.getContext('2d')
+const gl = canvas.getContext('webgl', { preserveDrawingBuffer: true })
+const webglRenderer = new WebGLRenderer(gl)
 canvas.width = window.innerWidth
 canvas.height = window.innerHeight
 
@@ -14,6 +15,7 @@ config = {
     renderStars: true,
     renderTrace: false,
     renderForces: false,
+    renderOrbits: true,
     followCam: false,
     scale: 1
 }

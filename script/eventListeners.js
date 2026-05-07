@@ -33,10 +33,14 @@ document.querySelector('#reload').addEventListener('click', function () {
     location.reload()
 })
 
+document.querySelector('#orbits').addEventListener('click', function () {
+    config.renderOrbits = !config.renderOrbits
+})
+
 
 
 document.querySelector('#forces').addEventListener('change', function () {
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    webglRenderer.clear(false)
     config.renderForces = this.checked
 })
 

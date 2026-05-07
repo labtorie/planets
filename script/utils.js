@@ -1,3 +1,5 @@
+const TIME_SCALE = 0.5
+
 function toCanvas(x, y, depth = 0) {
     const depthDelta = 3
     const scale = config.scale
