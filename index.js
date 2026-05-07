@@ -1,5 +1,5 @@
 const canvas = document.querySelector('#canvas')
-const gl = canvas.getContext('webgl', { preserveDrawingBuffer: true })
+const gl = canvas.getContext('webgl', { preserveDrawingBuffer: true, stencil: true })
 const webglRenderer = new WebGLRenderer(gl)
 canvas.width = window.innerWidth
 canvas.height = window.innerHeight

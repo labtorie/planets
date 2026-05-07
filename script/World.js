@@ -80,12 +80,11 @@ class World {
             webglRenderer.drawOcclusionMask(c.x, c.y, config.scale * planet.radius, planet.glow)
         })
 
-        webglRenderer.present(sunCanvasCoords)
-
-        // Отрисовка орбит поверх всех эффектов (чтобы они не блюмились)
-        if (config.renderOrbits) {
-            this.planets.forEach(planet => planet.renderOrbit())
-        }
+        webglRenderer.present(sunCanvasCoords, () => {
+            if (config.renderOrbits) {
+                this.planets.forEach(planet => planet.renderOrbit(true))
+            }
+        })
     }
 
     calculateFutureOrbits(steps = 100, dtScale = 5) {

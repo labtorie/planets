@@ -41,7 +41,7 @@ class Planet {
         this.coords = this.coords.add(this.velocity.scale(TIME_SCALE))
     }
 
-    renderOrbit() {
+    renderOrbit(useStencil = false) {
         if (!config.renderOrbits) return
 
         const rgb = webglRenderer.hexToRgb(this.color)
@@ -62,7 +62,7 @@ class Planet {
                 }
                 alpha *= 0.8 // Увеличенная яркость орбит
 
-                webglRenderer.drawLine(c1.x, c1.y, c2.x, c2.y, [rgb[0], rgb[1], rgb[2], alpha])
+                webglRenderer.drawLine(c1.x, c1.y, c2.x, c2.y, [rgb[0], rgb[1], rgb[2], alpha], useStencil)
             }
         }
 
@@ -71,14 +71,14 @@ class Planet {
             const lastH = this.history[this.history.length - 1]
             const c1 = toCanvas(lastH.x, lastH.y)
             const c2 = toCanvas(this.coords.x, this.coords.y)
-            webglRenderer.drawLine(c1.x, c1.y, c2.x, c2.y, [rgb[0], rgb[1], rgb[2], 0.8])
+            webglRenderer.drawLine(c1.x, c1.y, c2.x, c2.y, [rgb[0], rgb[1], rgb[2], 0.8], useStencil)
         }
 
         if (this.futurePoints.length > 1) {
             const nextF = this.futurePoints[0]
             const c1 = toCanvas(this.coords.x, this.coords.y)
             const c2 = toCanvas(nextF.x, nextF.y)
-            webglRenderer.drawLine(c1.x, c1.y, c2.x, c2.y, [rgb[0], rgb[1], rgb[2], 0.8])
+            webglRenderer.drawLine(c1.x, c1.y, c2.x, c2.y, [rgb[0], rgb[1], rgb[2], 0.8], useStencil)
             
             drawSegment(this.futurePoints, true)
         }

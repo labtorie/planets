@@ -450,30 +450,6 @@ class WebGLRenderer {
         }
     }
 
-    clear(trace) {
-        const gl = this.gl;
-        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-        
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        if (trace) {
-            gl.useProgram(this.fadeProgram);
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.quadBuffer);
-            
-            const posLoc = gl.getAttribLocation(this.fadeProgram, "a_position");
-            gl.enableVertexAttribArray(posLoc);
-            gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
-
-            gl.drawArrays(gl.TRIANGLES, 0, 6);
-        } else {
-            gl.clearColor(0, 0, 0, 1);
-            gl.clear(gl.COLOR_BUFFER_BIT);
-        }
-
-        this.checkFbos();
-        gl.bindFramebuffer(gl.FRAMEBUFFER, this.sceneFboObj.fbo);
-        gl.viewport(0, 0, this.sceneFboObj.width, this.sceneFboObj.height);
-        gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
 
         // Очищаем маску окклюзии
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.occlusionFboObj.fbo);
@@ -528,6 +504,12 @@ class WebGLRenderer {
 
     drawPlanet(x, y, radius, color, glow, sunCanvasCoords, obstacles) {
         const gl = this.gl;
+        
+        // Включаем запись в трафарет для планет
+        gl.enable(gl.STENCIL_TEST);
+        gl.stencilFunc(gl.ALWAYS, 1, 0xFF);
+        gl.stencilOp(gl.KEEP, gl.KEEP, gl.REPLACE);
+
         gl.useProgram(this.planetProgram);
         gl.bindBuffer(gl.ARRAY_BUFFER, this.quadBuffer);
         const posLoc = gl.getAttribLocation(this.planetProgram, "a_position");
@@ -591,10 +573,19 @@ class WebGLRenderer {
         gl.drawArrays(gl.TRIANGLES, 0, 6);
         
         if (posLoc >= 0) gl.disableVertexAttribArray(posLoc);
+        gl.disable(gl.STENCIL_TEST);
     }
 
-    drawLine(x1, y1, x2, y2, color) {
+    drawLine(x1, y1, x2, y2, color, useStencil = false) {
         const gl = this.gl;
+        
+        if (useStencil) {
+            gl.enable(gl.STENCIL_TEST);
+            // Рисуем только там, где нет планет (stencil == 0)
+            gl.stencilFunc(gl.EQUAL, 0, 0xFF);
+            gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+        }
+
         gl.useProgram(this.colorProgram);
         gl.bindBuffer(gl.ARRAY_BUFFER, this.lineBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([x1, y1, x2, y2]), gl.DYNAMIC_DRAW);
@@ -613,6 +604,7 @@ class WebGLRenderer {
         gl.drawArrays(gl.LINES, 0, 2);
         
         if (posLoc >= 0) gl.disableVertexAttribArray(posLoc);
+        if (useStencil) gl.disable(gl.STENCIL_TEST);
     }
 
     initStars(starsArray) {
@@ -674,7 +666,27 @@ class WebGLRenderer {
         gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
     }
 
-    present(sunCanvasCoords) {
+    clear(preserve) {
+        const gl = this.gl;
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.sceneFboObj.fbo);
+        gl.viewport(0, 0, this.sceneFboObj.width, this.sceneFboObj.height);
+        
+        if (!preserve) {
+            gl.clearColor(0.09, 0.094, 0.13, 1.0);
+            gl.clearStencil(0);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+        } else {
+            // Draw fade quad for trace effect
+            gl.useProgram(this.fadeProgram);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.quadBuffer);
+            const posLoc = gl.getAttribLocation(this.fadeProgram, "a_position");
+            gl.enableVertexAttribArray(posLoc);
+            gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+        }
+    }
+
+    present(sunCanvasCoords, orbitCallback) {
         const gl = this.gl;
         
         // 1. Extract bright
@@ -686,7 +698,7 @@ class WebGLRenderer {
         gl.uniform1i(gl.getUniformLocation(this.brightProgram, "u_texture"), 0);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-        // 2. Blur H
+        // 2. Blur
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.blurFbo1Obj.fbo);
         this.bindFsq(this.blurProgram);
         gl.activeTexture(gl.TEXTURE0);
@@ -696,13 +708,19 @@ class WebGLRenderer {
         gl.uniform2f(gl.getUniformLocation(this.blurProgram, "u_resolution"), this.blurFbo1Obj.width, this.blurFbo1Obj.height);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-        // 3. Blur V
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.blurFbo2Obj.fbo);
         gl.bindTexture(gl.TEXTURE_2D, this.blurFbo1Obj.texture);
         gl.uniform2f(gl.getUniformLocation(this.blurProgram, "u_dir"), 0.0, 1.0);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-        // God Rays Pass
+        // 3. Orbits draw (into sceneFbo, after bright extraction, with stencil test)
+        if (orbitCallback) {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, this.sceneFboObj.fbo);
+            gl.viewport(0, 0, this.sceneFboObj.width, this.sceneFboObj.height);
+            orbitCallback();
+        }
+
+        // God Rays
         let sunUvX = 0.5;
         let sunUvY = 0.5;
         if (sunCanvasCoords) {
@@ -714,12 +732,12 @@ class WebGLRenderer {
         gl.viewport(0, 0, this.godRaysFboObj.width, this.godRaysFboObj.height);
         this.bindFsq(this.godRaysProgram);
         gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, this.occlusionFboObj.texture); // Только маска окклюзии
+        gl.bindTexture(gl.TEXTURE_2D, this.occlusionFboObj.texture);
         gl.uniform1i(gl.getUniformLocation(this.godRaysProgram, "u_texture"), 0);
         gl.uniform2f(gl.getUniformLocation(this.godRaysProgram, "u_lightPos"), sunUvX, sunUvY);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-        // 4. Composite to Screen
+        // Final Composite
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
@@ -738,8 +756,6 @@ class WebGLRenderer {
         gl.uniform1i(gl.getUniformLocation(this.compositeProgram, "u_godRays"), 2);
         
         gl.drawArrays(gl.TRIANGLES, 0, 6);
-        
-        // Reset blend func for next frame standard draws
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     }
 }
