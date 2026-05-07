@@ -67,7 +67,6 @@ class World {
 
         if (config.renderOrbits) {
             this.calculateFutureOrbits()
-            this.planets.forEach(planet => planet.renderOrbit())
         }
 
         this.planets.forEach((planet, index) => {
@@ -83,6 +82,10 @@ class World {
 
         webglRenderer.present(sunCanvasCoords)
 
+        // Отрисовка орбит поверх всех эффектов (чтобы они не блюмились)
+        if (config.renderOrbits) {
+            this.planets.forEach(planet => planet.renderOrbit())
+        }
     }
 
     calculateFutureOrbits(steps = 100, dtScale = 5) {
