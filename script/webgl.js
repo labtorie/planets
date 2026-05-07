@@ -418,7 +418,7 @@ class WebGLRenderer {
         return colors[hex] || [1,1,1,1];
     }
 
-    createFbo(width, height) {
+    createFbo(width, height, useStencil = false) {
         const gl = this.gl;
         const texture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -431,6 +431,14 @@ class WebGLRenderer {
         const fbo = gl.createFramebuffer();
         gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+
+        if (useStencil) {
+            const rb = gl.createRenderbuffer();
+            gl.bindRenderbuffer(gl.RENDERBUFFER, rb);
+            gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_STENCIL, width, height);
+            gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, rb);
+        }
+
         return { fbo, texture, width, height };
     }
 
@@ -439,7 +447,7 @@ class WebGLRenderer {
         const w = gl.canvas.width;
         const h = gl.canvas.height;
         if (!this.sceneFboObj || this.sceneFboObj.width !== w || this.sceneFboObj.height !== h) {
-            this.sceneFboObj = this.createFbo(w, h);
+            this.sceneFboObj = this.createFbo(w, h, true);
             const bw = Math.max(1, Math.floor(w / 4));
             const bh = Math.max(1, Math.floor(h / 4));
             this.brightFboObj = this.createFbo(bw, bh);
@@ -448,17 +456,6 @@ class WebGLRenderer {
             this.godRaysFboObj = this.createFbo(bw, bh);
             this.occlusionFboObj = this.createFbo(bw, bh);
         }
-    }
-
-
-        // Очищаем маску окклюзии
-        gl.bindFramebuffer(gl.FRAMEBUFFER, this.occlusionFboObj.fbo);
-        gl.viewport(0, 0, this.occlusionFboObj.width, this.occlusionFboObj.height);
-        gl.clearColor(0, 0, 0, 1); // Фон — чёрный (нет света)
-        gl.clear(gl.COLOR_BUFFER_BIT);
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, this.sceneFboObj.fbo);
-        gl.viewport(0, 0, this.sceneFboObj.width, this.sceneFboObj.height);
     }
 
     drawOcclusionMask(x, y, radius, isSun) {
