@@ -60,7 +60,7 @@ class Planet {
                 } else {
                     alpha = (i / points.length)
                 }
-                alpha *= 0.5
+                alpha *= 0.8 // Увеличенная яркость орбит
 
                 webglRenderer.drawLine(c1.x, c1.y, c2.x, c2.y, [rgb[0], rgb[1], rgb[2], alpha])
             }
@@ -71,14 +71,14 @@ class Planet {
             const lastH = this.history[this.history.length - 1]
             const c1 = toCanvas(lastH.x, lastH.y)
             const c2 = toCanvas(this.coords.x, this.coords.y)
-            webglRenderer.drawLine(c1.x, c1.y, c2.x, c2.y, [rgb[0], rgb[1], rgb[2], 0.5])
+            webglRenderer.drawLine(c1.x, c1.y, c2.x, c2.y, [rgb[0], rgb[1], rgb[2], 0.8])
         }
 
         if (this.futurePoints.length > 1) {
             const nextF = this.futurePoints[0]
             const c1 = toCanvas(this.coords.x, this.coords.y)
             const c2 = toCanvas(nextF.x, nextF.y)
-            webglRenderer.drawLine(c1.x, c1.y, c2.x, c2.y, [rgb[0], rgb[1], rgb[2], 0.5])
+            webglRenderer.drawLine(c1.x, c1.y, c2.x, c2.y, [rgb[0], rgb[1], rgb[2], 0.8])
             
             drawSegment(this.futurePoints, true)
         }
